@@ -16,7 +16,7 @@ namespace Gestao_de_Biblioteca.Models
         public DateTime? DataDevolucaoEfetiva { get; private set; }
         public EstadoEmprestimo Estado { get; private set; }
 
-        public Emprestimo(Livro livro, Leitor leitor, int diasEmprestimo = 7)
+        public Emprestimo(Livro livro, Leitor leitor, int diasEmprestimo = 14)
         {
             Id = _proximoId++;
             Livro = livro ?? throw new ArgumentNullException(nameof(livro));
@@ -33,7 +33,7 @@ namespace Gestao_de_Biblioteca.Models
                 if (DataDevolucaoEfetiva.Value > DataPrevistaDevolucao)
                 {
                     int diasAtraso = (DataDevolucaoEfetiva.Value - DataPrevistaDevolucao).Days;
-                    return diasAtraso * 10; // 10,00Kz por dia de atraso
+                    return diasAtraso * 50; // 50,00Kz por dia de atraso
                 }
             }
             else if (Estado == EstadoEmprestimo.EmCurso && DateTime.Now > DataPrevistaDevolucao)
