@@ -1,2 +1,2 @@
-# Sistema-de-gest-o-de-biblioteca
+# Gestao de Biblioteca
 Implementação de um sistema de gestão de biblioteca 
