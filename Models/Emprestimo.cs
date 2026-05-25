@@ -51,7 +51,7 @@ namespace Gestao_de_Biblioteca.Models
             DataDevolucaoEfetiva = DateTime.Now;
             Estado = EstadoEmprestimo.Devolvido;
             Livro.Devolver();
-            Leitor.EmprestimosActivos--;
+            Leitor.DecrementarEmprestimos();
         }
 
         public override string ToString()

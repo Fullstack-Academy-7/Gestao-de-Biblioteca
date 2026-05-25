@@ -26,6 +26,11 @@ namespace Gestao_de_Biblioteca
                 Console.WriteLine("6 - Listar Empréstimos Abertos");
                 Console.WriteLine("7 - Ver Histórico de um Leitor");
                 Console.WriteLine("8 - Listar Todos os Livros");
+                Console.WriteLine("9 - Editar Livro");
+                Console.WriteLine("10 - Remover Livro");
+                Console.WriteLine("11 - Listar Leitores");
+                Console.WriteLine("12 - Editar Leitor");
+                Console.WriteLine("13 - Remover Leitor");
                 Console.WriteLine("0 - Sair");
                 Console.Write("Escolha: ");
 
@@ -42,19 +47,32 @@ namespace Gestao_de_Biblioteca
                         case "6": ListarEmprestimosAbertos(); break;
                         case "7": HistoricoLeitor(); break;
                         case "8": ListarTodosLivros(); break;
+                        case "9": EditarLivro(); break;
+                        case "10": RemoverLivro(); break;
+                        case "11": ListarLeitores(); break;
+                        case "12": EditarLeitor(); break;
+                        case "13": RemoverLeitor(); break;
                         case "0": sair = true; break;
                         default: Console.WriteLine("Opção inválida."); break;
                     }
                 }
                 catch (Exception ex)
                 {
+                    Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine($"\nERRO: {ex.Message}");
+                }
+                finally
+                {
+                    Console.ResetColor();
                 }
 
                 if (!sair)
                 {
                     Console.WriteLine("\nPressione qualquer tecla para continuar...");
-                    Console.ReadKey();
+                    if (Console.IsInputRedirected)
+                        Console.ReadLine();
+                    else
+                        Console.ReadKey();
                 }
             }
         }
@@ -68,8 +86,8 @@ namespace Gestao_de_Biblioteca
 
                 var livro1 = new Livro { ISBN = "978-3-16-148410-0", Titulo = "C# Avançado", Autor = "Robert Martin", AnoPublicacao = 2020, TotalExemplares = 3, ExemplaresDisponiveis = 3 };
                 var livro2 = new Livro { ISBN = "978-0-13-110362-7", Titulo = "Clean Code", Autor = "Robert Martin", AnoPublicacao = 2008, TotalExemplares = 2, ExemplaresDisponiveis = 2 };
-                gestor.ObterCatalogo().AdicionarLivro(livro1);
-                gestor.ObterCatalogo().AdicionarLivro(livro2);
+                gestor.RegistrarLivro(livro1);
+                gestor.RegistrarLivro(livro2);
             }
             catch { }
         }
@@ -81,11 +99,33 @@ namespace Gestao_de_Biblioteca
             Console.Write("ISBN: "); livro.ISBN = Console.ReadLine()?.Trim() ?? "";
             Console.Write("Título: "); livro.Titulo = Console.ReadLine()?.Trim() ?? "";
             Console.Write("Autor: "); livro.Autor = Console.ReadLine()?.Trim() ?? "";
-            Console.Write("Ano de Publicação: "); livro.AnoPublicacao = int.Parse(Console.ReadLine() ?? "0");
-            Console.Write("Total de Exemplares: "); livro.TotalExemplares = int.Parse(Console.ReadLine() ?? "0");
+            livro.AnoPublicacao = LerInteiro("Ano de Publicação: ");
+            livro.TotalExemplares = LerInteiro("Total de Exemplares: ");
             livro.ExemplaresDisponiveis = livro.TotalExemplares;
-            gestor.ObterCatalogo().AdicionarLivro(livro);
+            gestor.RegistrarLivro(livro);
             Console.WriteLine("Livro cadastrado com sucesso!");
+        }
+
+        static void EditarLivro()
+        {
+            Console.WriteLine("\n--- Editar Livro ---");
+            Console.Write("ISBN do livro a editar: ");
+            string isbn = Console.ReadLine()?.Trim() ?? "";
+            string? titulo = LerTextoOpcional("Novo título (Enter para manter): ");
+            string? autor = LerTextoOpcional("Novo autor (Enter para manter): ");
+            int? ano = LerInteiroOpcional("Novo ano de publicação (Enter para manter): ");
+            int? total = LerInteiroOpcional("Novo total de exemplares (Enter para manter): ");
+            gestor.EditarLivro(isbn, titulo, autor, ano, total);
+            Console.WriteLine("Livro editado com sucesso!");
+        }
+
+        static void RemoverLivro()
+        {
+            Console.WriteLine("\n--- Remover Livro ---");
+            Console.Write("ISBN do livro: ");
+            string isbn = Console.ReadLine()?.Trim() ?? "";
+            gestor.RemoverLivro(isbn);
+            Console.WriteLine("Livro removido com sucesso!");
         }
 
         static void CadastrarLeitor()
@@ -100,6 +140,27 @@ namespace Gestao_de_Biblioteca
             leitor.EmprestimosActivos = 0;
             gestor.RegistrarLeitor(leitor);
             Console.WriteLine("Leitor cadastrado com sucesso!");
+        }
+
+        static void EditarLeitor()
+        {
+            Console.WriteLine("\n--- Editar Leitor ---");
+            Console.Write("ID do leitor: ");
+            string id = Console.ReadLine()?.Trim() ?? "";
+            string? nome = LerTextoOpcional("Novo nome (Enter para manter): ");
+            string? email = LerTextoOpcional("Novo email (Enter para manter): ");
+            string? telefone = LerTextoOpcional("Novo telefone (Enter para manter): ");
+            gestor.EditarLeitor(id, nome, email, telefone);
+            Console.WriteLine("Leitor editado com sucesso!");
+        }
+
+        static void RemoverLeitor()
+        {
+            Console.WriteLine("\n--- Remover Leitor ---");
+            Console.Write("ID do leitor: ");
+            string id = Console.ReadLine()?.Trim() ?? "";
+            gestor.RemoverLeitor(id);
+            Console.WriteLine("Leitor removido com sucesso!");
         }
 
         static void RealizarEmprestimo()
@@ -119,7 +180,7 @@ namespace Gestao_de_Biblioteca
                 throw new ArgumentException("ID inválido.");
             decimal multa = gestor.ProcessarDevolucao(idEmp);
             if (multa > 0)
-                Console.WriteLine($"Devolução registrada. Multa: R$ {multa:F2}");
+                Console.WriteLine($"Devolução registrada. Multa: {multa:F2} Kz");
             else
                 Console.WriteLine("Devolução registrada. Sem multa.");
         }
@@ -166,6 +227,44 @@ namespace Gestao_de_Biblioteca
                 Console.WriteLine("Catálogo vazio.");
             else
                 foreach (var l in livros) Console.WriteLine(l);
+        }
+
+        static void ListarLeitores()
+        {
+            Console.WriteLine("\n--- Leitores Registados ---");
+            var leitores = gestor.ObterLeitores();
+            if (leitores.Count == 0)
+                Console.WriteLine("Nenhum leitor registado.");
+            else
+                foreach (var leitor in leitores) Console.WriteLine(leitor.ObterResumo());
+        }
+
+        static int LerInteiro(string mensagem)
+        {
+            Console.Write(mensagem);
+            if (!int.TryParse(Console.ReadLine(), out int valor))
+                throw new ArgumentException("Valor numérico inválido.");
+            return valor;
+        }
+
+        static string? LerTextoOpcional(string mensagem)
+        {
+            Console.Write(mensagem);
+            string? valor = Console.ReadLine()?.Trim();
+            return string.IsNullOrWhiteSpace(valor) ? null : valor;
+        }
+
+        static int? LerInteiroOpcional(string mensagem)
+        {
+            Console.Write(mensagem);
+            string? valor = Console.ReadLine()?.Trim();
+            if (string.IsNullOrWhiteSpace(valor))
+                return null;
+
+            if (!int.TryParse(valor, out int numero))
+                throw new ArgumentException("Valor numérico inválido.");
+
+            return numero;
         }
     }
 }

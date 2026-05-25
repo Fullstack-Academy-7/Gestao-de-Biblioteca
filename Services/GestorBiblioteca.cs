@@ -2,16 +2,40 @@
 
 using Gestao_de_Biblioteca.Enums;
 using Gestao_de_Biblioteca.Exceptions;
+using Gestao_de_Biblioteca.Interfaces;
 using Gestao_de_Biblioteca.Models;
 
 namespace Gestao_de_Biblioteca.Services
 {
     public class GestorBiblioteca
     {
-        private Catalogo _catalogo = new();
-        private List<Leitor> _leitores = new();
-        private List<Emprestimo> _emprestimos = new();
-        private readonly int _limiteEmprestimos = 3;
+        private readonly Catalogo _catalogo = new();
+        private readonly IPesquisavel _pesquisador;
+        private readonly List<Leitor> _leitores = new();
+        private readonly List<Emprestimo> _emprestimos = new();
+
+        public GestorBiblioteca()
+        {
+            _pesquisador = _catalogo;
+        }
+
+        public void RegistrarLivro(Livro livro)
+        {
+            _catalogo.AdicionarLivro(livro);
+        }
+
+        public void EditarLivro(string isbnActual, string? titulo, string? autor, int? anoPublicacao, int? totalExemplares)
+        {
+            _catalogo.EditarLivro(isbnActual, titulo, autor, anoPublicacao, totalExemplares);
+        }
+
+        public void RemoverLivro(string isbn)
+        {
+            if (_emprestimos.Any(e => e.Livro.ISBN == isbn && e.Estado != EstadoEmprestimo.Devolvido))
+                throw new InvalidOperationException("Não é possível remover um livro com empréstimos em aberto.");
+
+            _catalogo.RemoverLivro(isbn);
+        }
 
         public void RegistrarLeitor(Leitor leitor)
         {
@@ -19,6 +43,34 @@ namespace Gestao_de_Biblioteca.Services
             if (_leitores.Any(l => l.Id == leitor.Id))
                 throw new InvalidOperationException($"Leitor com ID {leitor.Id} já está registrado.");
             _leitores.Add(leitor);
+        }
+
+        public void EditarLeitor(string id, string? nome, string? email, string? telefone)
+        {
+            var leitor = _leitores.FirstOrDefault(l => l.Id == id);
+            if (leitor == null)
+                throw new ArgumentException($"Leitor com ID {id} não encontrado.");
+
+            if (!string.IsNullOrWhiteSpace(nome))
+                leitor.Nome = nome;
+
+            if (!string.IsNullOrWhiteSpace(email))
+                leitor.Email = email;
+
+            if (!string.IsNullOrWhiteSpace(telefone))
+                leitor.Telefone = telefone;
+        }
+
+        public void RemoverLeitor(string id)
+        {
+            var leitor = _leitores.FirstOrDefault(l => l.Id == id);
+            if (leitor == null)
+                throw new ArgumentException($"Leitor com ID {id} não encontrado.");
+
+            if (_emprestimos.Any(e => e.Leitor.Id == id && e.Estado != EstadoEmprestimo.Devolvido))
+                throw new InvalidOperationException("Não é possível remover um leitor com empréstimos em aberto.");
+
+            _leitores.Remove(leitor);
         }
 
         public void RealizarEmprestimo(string isbn, string idLeitor)
@@ -35,10 +87,10 @@ namespace Gestao_de_Biblioteca.Services
                 throw new ArgumentException($"Leitor com ID {idLeitor} não encontrado.");
 
             if (!leitor.PodeEmprestar())
-                throw new LimiteEmprestimoExcedidoException($"Leitor {leitor.Nome} já atingiu o limite de {_limiteEmprestimos} empréstimos ativos.");
+                throw new LimiteEmprestimoExcedidoException($"Leitor {leitor.Nome} já atingiu o limite de {Leitor.LimiteMaximoEmprestimos} empréstimos ativos.");
 
             livro.Emprestar();
-            leitor.EmprestimosActivos++;
+            leitor.IncrementarEmprestimos();
 
             var emprestimo = new Emprestimo(livro, leitor);
             _emprestimos.Add(emprestimo);
@@ -65,15 +117,18 @@ namespace Gestao_de_Biblioteca.Services
 
         public List<Emprestimo> HistoricoPorLeitor(string idLeitor)
         {
+            if (!_leitores.Any(l => l.Id == idLeitor))
+                throw new ArgumentException($"Leitor com ID {idLeitor} não encontrado.");
+
             return _emprestimos.Where(e => e.Leitor.Id == idLeitor).ToList();
         }
 
         public List<Livro> PesquisarLivro(string termo)
         {
             var resultado = new List<Livro>();
-            resultado.AddRange(_catalogo.PesquisarPorTítulo(termo));
-            resultado.AddRange(_catalogo.PesquisarPorAutor(termo));
-            var porIsbn = _catalogo.PesquisarPorISBN(termo);
+            resultado.AddRange(_pesquisador.PesquisarPorTítulo(termo));
+            resultado.AddRange(_pesquisador.PesquisarPorAutor(termo));
+            var porIsbn = _pesquisador.PesquisarPorISBN(termo);
             if (porIsbn != null) resultado.Add(porIsbn);
             return resultado.Distinct().ToList();
         }

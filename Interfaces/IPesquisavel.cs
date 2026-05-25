@@ -7,6 +7,6 @@ namespace Gestao_de_Biblioteca.Interfaces
     {
         List<Livro> PesquisarPorTítulo(string titulo);
         List<Livro> PesquisarPorAutor(string autor);
-        Livro PesquisarPorISBN(string isbn);
+        Livro? PesquisarPorISBN(string isbn);
     }
 }
